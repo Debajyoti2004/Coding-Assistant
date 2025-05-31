@@ -1,0 +1,5 @@
+DEFAULT_VSCODE_HOVER_IMAGE_FILE_PATH = "C:/Users/Debajyoti/OneDrive/Desktop/Code Assistant/images/project.png"
+VSCODE_CREATE_FILE_BUTTON_IMG_PATH = "C:/Users/Debajyoti/OneDrive/Desktop/Code Assistant/images/file_create_button.png"
+VSCODE_CREATE_DIR_BUTTON_IMG_PATH = "C:/Users/Debajyoti/OneDrive/Desktop/Code Assistant/images/dir_create_button.png"
+PROJECT_BASE_DIRECTORY = "C:/Users/Debajyoti/OneDrive/Desktop"
+FAISS_STORE_PATH="C:/Users/Debajyoti/OneDrive/Desktop/Code Assistant"
