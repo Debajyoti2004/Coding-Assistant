@@ -3,3 +3,4 @@ VSCODE_CREATE_FILE_BUTTON_IMG_PATH = "C:/Users/Debajyoti/OneDrive/Desktop/Code A
 VSCODE_CREATE_DIR_BUTTON_IMG_PATH = "C:/Users/Debajyoti/OneDrive/Desktop/Code Assistant/images/dir_create_button.png"
 PROJECT_BASE_DIRECTORY = "C:/Users/Debajyoti/OneDrive/Desktop"
 FAISS_STORE_PATH="C:/Users/Debajyoti/OneDrive/Desktop/Code Assistant"
+SEQUENCE_KEYWORDS = ["first", "then", "after that", "and then", "next", "afterwards", "subsequently"]

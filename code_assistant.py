@@ -11,7 +11,13 @@ from code_parser import CodeParser
 from llm_core import LLMService 
 from project_memory import ProjectMemory
 from dotenv import load_dotenv
+import re
 load_dotenv()
+
+def split_into_subcommands(command: str):
+    pattern = r"\b(?:first|then|after that|and then|next|afterwards|subsequently)\b"
+    parts = re.split(pattern, command, flags=re.IGNORECASE)
+    return [part.strip(" ,.") for part in parts if part.strip()]
 
 class CodeAssistant:
     def __init__(self,user_id:str,session_id:str): 
@@ -248,7 +254,7 @@ class CodeAssistant:
 
         elif any(phrase in command_lower for phrase in ["create directory", "create folder", "make folder", "make directory","make a folder","make a directory","create a folder","create a directory"]):
             trigger_phrases = ["create directory","create folder","make directory","make folder", "make a folder","make a directory","create a folder","create a directory"]
-            prefix_keywords = ["named","called","as ","a ","an ","the "]
+            prefix_keywords = ["named","called","with name","as ","a ","an ","the "]
             dir_name = self._extract_argument_from_command(original_command,trigger_phrases,prefix_keywords) 
 
             if not dir_name:
@@ -493,7 +499,11 @@ class CodeAssistant:
                 if raw_command:
                     user_input_text = raw_command.strip()
                     if user_input_text:
-                         running = self.handle_command(user_input_text)
+                        subcommands = split_into_subcommands(user_input_text)
+                        for subcommand in subcommands:
+                            running = self.handle_command(subcommand)
+                            if not running:
+                                break
                 else: 
                     time.sleep(0.5) 
 
@@ -501,6 +511,6 @@ class CodeAssistant:
                 self.voice_handler.speak("Exiting now.")
                 running = False
             except Exception as e:
-                self.voice_handler.speak(f"An unexpected error occurred in the main loop. Please check the console.")
+                self.voice_handler.speak("An unexpected error occurred in the main loop. Please check the console.")
                 print(f"Runtime Error: {e} during command: {user_input_text}")
                 time.sleep(1) 
