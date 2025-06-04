@@ -17,7 +17,11 @@ load_dotenv()
 def split_into_subcommands(command: str):
     pattern = r"\b(?:first|then|after that|and then|next|afterwards|subsequently)\b"
     parts = re.split(pattern, command, flags=re.IGNORECASE)
-    return [part.strip(" ,.") for part in parts if part.strip()]
+    cleaned_parts = [part.strip(" ,.") for part in parts if part.strip()]
+
+    if len(cleaned_parts) <= 1:
+        return [command.strip()]
+    return cleaned_parts
 
 class CodeAssistant:
     def __init__(self,user_id:str,session_id:str): 
