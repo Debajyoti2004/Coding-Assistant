@@ -1,6 +1,6 @@
-
 import os
 import subprocess
+import sys
 
 class ProjectManagerHandler:
     DEFAULT_PROJECT_BASE_DIR = os.path.expanduser("~/Desktop/VoiceAssistedProjects")
@@ -22,11 +22,11 @@ class ProjectManagerHandler:
                 self.voice_handler.speak(f"Created base directory at {self.project_base_dir}")
 
             if os.path.exists(project_path):
-                self.voice_handler.speak(f"Project folder '{project_name}' already exists at {project_path}.")
+                self.voice_handler.speak(f"Project folder '{project_name}' already exists.")
                 return project_path
             
             os.makedirs(project_path)
-            self.voice_handler.speak(f"Successfully created project folder '{project_name}' at {project_path}.")
+            self.voice_handler.speak(f"Successfully created project folder '{project_name}'.")
             return project_path
         except Exception as e:
             self.voice_handler.speak(f"Error creating project folder '{project_name}': {e}")
@@ -37,13 +37,16 @@ class ProjectManagerHandler:
             self.voice_handler.speak(f"Invalid folder path: {folder_path}")
             return False
         
+        is_windows = sys.platform == "win32"
+        shell_mode = True if is_windows else False
+        
         try:
-            self.voice_handler.speak(f"Opening VS Code in {folder_path}...")
-            subprocess.run(["code", folder_path], check=True, shell=False)
+            self.voice_handler.speak(f"Opening VS Code in the project folder...")
+            subprocess.run(["code", folder_path], check=True, shell=shell_mode)
             self.voice_handler.speak("VS Code should now be open.")
             return True
         except FileNotFoundError:
-            self.voice_handler.speak("Error: The 'code' command was not found. Make sure VS Code is installed and 'code' is in your system's PATH.")
+            self.voice_handler.speak("Error: The 'code' command was not found. Make sure VS Code is installed and that 'code' is in your system's PATH.")
             return False
         except subprocess.CalledProcessError as e:
             self.voice_handler.speak(f"Error opening VS Code: {e}")
@@ -51,3 +54,4 @@ class ProjectManagerHandler:
         except Exception as e:
             self.voice_handler.speak(f"An unexpected error occurred while trying to open VS Code: {e}")
             return False
+        
