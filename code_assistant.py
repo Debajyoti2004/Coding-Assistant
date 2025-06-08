@@ -173,7 +173,29 @@ class CodeAssistant:
                     if final_argument:
                         return final_argument
         return None
-
+    
+    def _extract_path_from_command(self, command: str, command_type: str) -> dict:
+        command_lower = command.lower()
+        result = {'name': None, 'parent': None}
+        pattern = re.compile(
+            rf".*(?:named|called)\s+([\w\.\/\\_]+)\s+(?:under|in|inside)\s+([\w\.\/\\_]+)",
+            re.IGNORECASE
+        )
+        match = pattern.match(command_lower)
+        if match:
+            result['name'] = match.group(1)
+            result['parent'] = match.group(2)
+        else:
+            if command_type == 'file':
+                keyword = "file"
+            else:
+                keyword = "directory"
+            name_pattern = re.compile(rf"create\s+(?:a\s+)?{keyword}\s+(?:named|called)?\s*([\w\.\/\\_]+)", re.IGNORECASE)
+            name_match = name_pattern.search(command_lower)
+            if name_match:
+                result['name'] = name_match.group(1)
+        return result
+    
     def _handle_llm_output(self, llm_response_dict):
         if not isinstance(llm_response_dict, dict):
             self.speak(str(llm_response_dict), 'info')
@@ -240,31 +262,55 @@ class CodeAssistant:
     def handle_command(self, command: str):
         command_lower = command.lower()
         
-        if any(cmd in command_lower for cmd in ["create file", "make file", "create a file", "make a file"]):
-            file_name = self._extract_argument_from_command(command, ["create a file", "make a file","create file","make file"], ["named ", "called "], True)
-            if not file_name: file_name = self.listen("What's the full file name?")
+        if any(cmd in command_lower for cmd in ["create file", "make file"]):
+            path_info = self._extract_path_from_command(command, "file")
+            file_name = path_info.get('name')
+            parent_dir = path_info.get('parent')
+
+            if not file_name:
+                file_name = self.listen("What should the file be named?")
+            if not parent_dir:
+                parent_dir = self.listen("Where should I create this file? (e.g., 'src/utils' or just press Enter for the root)")
+            
             if file_name:
-                full_path = os.path.join(self.project_dir, file_name.replace(" ", "_").strip())
+                base_path = self.project_dir
+                if parent_dir and os.path.exists(os.path.join(self.project_dir, parent_dir)):
+                    base_path = os.path.join(self.project_dir, parent_dir)
+                
+                full_path = os.path.join(base_path, file_name)
                 if self.vscode_handler.create_and_open_file(full_path):
                     self.active_file_path = full_path
                     self._refresh_code_parser()
-                    self.speak(f"'{os.path.basename(full_path)}' is now the active file.")
+                    self.speak(f"Created file '{file_name}' inside '{os.path.relpath(base_path, self.project_dir)}'.")
             return True
         
-        elif any(phrase in command_lower for phrase in ["create directory", "create folder", "make folder", "make directory"]):
-            dir_name = self._extract_argument_from_command(command, ["create directory","create folder","make directory","make folder"], ["named ","called "])
-            if not dir_name: dir_name = self.listen("What's the directory name?")
-            if dir_name:
-                full_path = os.path.join(self.project_dir, dir_name.replace(" ", "_").strip())
-                if self.vscode_handler.create_directory(full_path):
-                    self._refresh_code_parser()
+        elif any(phrase in command_lower for phrase in ["create directory", "create folder"]):
+            path_info = self._extract_path_from_command(command, "directory")
+            dir_name = path_info.get('name')
+            parent_dir = path_info.get('parent')
+
+            if not dir_name:
+                dir_name = self.listen("What should the directory be named?")
+            
+            base_path = self.project_dir
+            if parent_dir:
+                prospective_parent_path = os.path.join(self.project_dir, parent_dir)
+                if os.path.exists(prospective_parent_path):
+                    base_path = prospective_parent_path
+                else:
+                    self.speak(f"Parent directory '{parent_dir}' doesn't exist. Creating '{dir_name}' in the root.")
+            
+            full_path = os.path.join(base_path, dir_name)
+            if self.vscode_handler.create_directory(full_path):
+                self._refresh_code_parser()
+                self.speak(f"Created directory '{dir_name}' inside '{os.path.relpath(base_path, self.project_dir)}'.")
             return True
 
         elif any(phrase in command_lower for phrase in ["open file", "go to file", "switch to file"]) or (command_lower.startswith("open ") and len(command_lower.split()) > 1):
             file_to_open = self._extract_argument_from_command(command, ["open file", "go to file", "switch to file", "open "], ["the ","a "], True)
             if not file_to_open: file_to_open = self.listen("Which file should I open?")
             if file_to_open:
-                found_path = next((path for path in self.code_parser.get_all_files() if file_to_open in os.path.basename(path)), None)
+                found_path = next((path for path in self.code_parser.get_all_files().values() if file_to_open in os.path.basename(path)), None)
                 if found_path and self.vscode_handler.open_file_in_editor(found_path):
                     self.active_file_path = found_path
                     self.speak(f"Switched to {os.path.basename(found_path)}.")
